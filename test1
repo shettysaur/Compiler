@@ -1,0 +1,30 @@
+_main[]
+	matrix mat1, mat2;
+	read(mat1);
+	mat2 = [6, 1, 10; 6, 10, 0] + a12;
+	
+		
+	m = mat1 + mat2;
+
+				
+	print(5);
+	
+		
+		
+	String s = "abc";
+
+				
+		a = a          + 20;
+	a = jkewhdkjehjdewjhjhefhjhdfhjhdsjfkgjgh9 + aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa2;
+
+	
+	a = w1+200.23;
+
+			string s;
+	s = "number";
+	a = @s;
+	
+	a = @"number";
+	
+
+end;

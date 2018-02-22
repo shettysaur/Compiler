@@ -43,10 +43,37 @@ FILE* getStream(FILE *fp,int x){
 	}
 }
 
+int getKeyword(char str[20]){
+	if(!strcmp(str,"string"))
+		return STRING;
+	else if(!strcmp(str,"end"))
+		return END;
+	else if(!strcmp(str,"int"))
+		return INT;
+	else if(!strcmp(str,"real"))
+		return REAL;
+	else if(!strcmp(str,"matrix"))
+		return MATRIX;
+	else if(!strcmp(str,"if"))
+		return IF;
+	else if(!strcmp(str,"else"))
+		return ELSE;
+	else if(!strcmp(str,"endif"))
+		return ENDIF;
+	else if(!strcmp(str,"read"))
+		return READ;
+	else if(!strcmp(str,"print"))
+		return PRINT;
+	else if(!strcmp(str,"function"))
+		return FUNCTION;
+	else 
+		return 0;
+}
+
 tokenInfo getNextToken(FILE* fp){
-	if(1){
+	while(1){
 		tokenInfo token;
-//		printf("lexBegin value = %c\n",*(lexBegin));
+//		printf("lexBegin value = %d\n",*(lexBegin));
 		if(forward == lex_buffer1+BUFFER_SIZE){
 			printf("First buffer full\n");
 			if(lexBegin == forward){
@@ -66,11 +93,11 @@ tokenInfo getNextToken(FILE* fp){
 			else
 				fp = getStream(fp,0);
 		}
-		printf("lexBegin value = %d\n",*(lexBegin));
+//		printf("lexBegin value = %d\n",*(lexBegin));
 		if(*(lexBegin) == 13){
 			lexBegin = ++forward;
 			if(*(lexBegin) == '\n')	{
-				printf("New linefound \n");
+//				printf("New linefound \n");
 				line_no++;
 				lexBegin = ++forward;
 			}
@@ -88,6 +115,9 @@ tokenInfo getNextToken(FILE* fp){
 			token.line_no = line_no;
 			lexBegin = ++forward;
 			return token; 		
+		}
+		else if(*lexBegin == ' ' || *lexBegin == '\t'){
+			lexBegin = ++forward;
 		}
 		else if(*lexBegin == '('){
 			token.type = OP;
@@ -152,6 +182,105 @@ tokenInfo getNextToken(FILE* fp){
 			lexBegin = ++forward;
 			return token; 		
 		}
+		else if(*lexBegin == 0){
+//			printf("ENDOFFILE\n");
+			token.type = ENDOFFILE;
+			token.val_type = 4;
+			token.line_no = line_no;
+			lexBegin = ++forward;
+			return token; 		
+		}
+		else if(*lexBegin == '.'){
+			if(*(forward +1) == 'a' && *(forward +2) == 'n' && *(forward +3) == 'd' && *(forward +4) == '.'){
+				token.type = AND;
+				token.val_type = 4;
+				token.line_no = line_no;
+				forward = forward + 5;
+				lexBegin = forward;
+				return token; 			
+			}
+			else if(*(forward +1) == 'o' && *(forward +2) == 'r' && *(forward +3) == '.'){
+				token.type = OR;
+				token.val_type = 4;
+				token.line_no = line_no;
+				forward = forward + 4;
+				lexBegin = forward;
+				return token; 			
+			}
+			else if(*(forward +1) == 'n' && *(forward +2) == 'o' && *(forward +3) == 't' && *(forward +4) == '.'){
+				token.type = NOT;
+				token.val_type = 4;
+				token.line_no = line_no;
+				forward = forward + 5;
+				lexBegin = forward;
+				return token; 			
+			}
+			else{
+				printf("Error in line no %d",line_no);
+				return;
+			}
+			
+		}
+		else if(*lexBegin == '='){
+			if(*(++forward) == '='){
+				token.type = EQ;
+				token.val_type = 4;
+				token.line_no = line_no;
+				lexBegin = ++forward;
+				return token; 			
+			}
+			else if(*forward == '/'){
+				if(*(++forward) == '='){
+					token.type = NE;
+					token.val_type = 4;
+					token.line_no = line_no;
+					lexBegin = ++forward;
+					return token; 			
+				}	
+			}
+			else{
+				token.type = ASSIGNOP;
+				token.val_type = 4;
+				token.line_no = line_no;
+				lexBegin = forward;
+				return token; 			
+				
+			}			
+		}
+		else if(*lexBegin == '<'){
+			if(*(++forward) == '='){
+				token.type = LE;
+				token.val_type = 4;
+				token.line_no = line_no;
+				lexBegin = ++forward;
+				return token; 			
+			}
+			else{
+				token.type = LT;
+				token.val_type = 4;
+				token.line_no = line_no;
+				lexBegin = forward;
+				return token; 			
+				
+			}			
+		}
+		else if(*lexBegin == '>'){
+			if(*(++forward) == '='){
+				token.type = GE;
+				token.val_type = 4;
+				token.line_no = line_no;
+				lexBegin = ++forward;
+				return token; 			
+			}
+			else{
+				token.type = GT;
+				token.val_type = 4;
+				token.line_no = line_no;
+				lexBegin = forward;
+				return token; 			
+				
+			}			
+		}
 		else if(*lexBegin == '#'){
 			token.type = COMMENT;
 			token.val_type = 4;
@@ -162,28 +291,176 @@ tokenInfo getNextToken(FILE* fp){
 			lexBegin = ++forward;
 			return token; 		
 		}
+		else if(isdigit(*(lexBegin))){
+			int num = 0;
+			double rnum = 0;
+			num = *forward - '0';
+			rnum = *forward - '0';
+			while(isdigit(*++forward)){
+				num = num*10 + (*forward-'0');
+				rnum = rnum*10 + (*forward-'0');
+			}
+			if(*forward == '.'){
+				if(isdigit(*(forward+1)) && isdigit(*(forward+2))){
+					rnum = (rnum*100+(*(forward+1)-'0')*10 + (*(forward+2)-'0'))/100;
+					token.type = RNUM;
+					token.val_type = 2;
+					token.lex.rnum = rnum;
+					token.line_no = line_no;
+					forward = forward+3;
+					lexBegin = forward;
+					return token; 			
+					
+				}
+				else{
+					token.type = NUM;
+					token.val_type = 1;
+					token.lex.num = num;
+					token.line_no = line_no;
+					lexBegin = forward;
+					return token; 			
+					
+				}
+			}
+			else{
+					token.type = NUM;
+					token.val_type = 1;
+					token.lex.num = num;
+					token.line_no = line_no;
+					lexBegin = forward;
+					return token; 			
+				
+			}
+		}
+		else if(*lexBegin == '_'){
+			forward++;
+			char temp[20] = "";
+			int p = 0;
+			if(isalpha(*forward)){
+				temp[p++] = *forward++;
+				while(1){
+					while(isalpha(*forward) || isdigit(*forward)){
+						temp[p++] = *forward++;
+					}
+					temp[p++] = '\0';
+					if(!strcmp(temp,"main")){
+						token.type = MAIN;
+						token.val_type = 4;
+						lexBegin = forward;
+						return token;
+					}
+					else{ 
+						token.type = FUNID;
+						token.val_type = 3;
+						strcpy(token.lex.name,temp);
+						lexBegin = forward;
+						return token;
+					}
+				}
+			}
+			else{
+				printf("Function name must start with alphabet");
+				return;
+			}
+		}
+		else if(*lexBegin == '"'){
+			forward++;
+			char temp[20] = "";
+			int p = 0;
+			while(isalpha(*forward) || *forward == ' '){
+				temp[p++] = *forward++;	
+			}
+			if(*forward == '"'){
+				temp[p++] = '\0';
+				token.type = STR;
+				token.val_type = 3;
+				strcpy(token.lex.name,temp);
+				lexBegin = ++forward;
+				return token;
+			}
+			else{
+				printf("Error at line %d",line_no);
+				return;
+			}
+		}
 		else if(isalpha(*lexBegin)){
 			char temp[20] = "";
 			int p = 0;
 			temp[p++] = *lexBegin;
 			while(1){
-				while(++forward != lex_buffer1+BUFFER_SIZE && (isalpha(*forward) || isdigit(*forward))){
+				while(++forward != lex_buffer1+BUFFER_SIZE && (isalpha(*forward) || isdigit(*forward)) || p>19){
 					if(isdigit(*forward)){
-						temp[p++] = *forward;
-						temp[p++] = '\0'; 
-						token.type = ID;
-						token.val_type = 3;
-						strcpy(token.lex.name,temp);
-						lexBegin = ++forward;
-						return token;
+						if(isalpha(*(forward+1)) || isdigit(*(forward+1))){
+							printf("Lexical error at line %d",line_no);
+							return;
+						}
+						else{
+							temp[p++] = *forward;
+							temp[p++] = '\0'; 
+							token.type = ID;
+							token.val_type = 3;
+							strcpy(token.lex.name,temp);
+							lexBegin = ++forward;
+							return token;
+						}
+					}
+					else if(isalpha(*forward)){
+						if(!isalpha(*(forward+1)) && !isdigit(*(forward+1))){
+//							Check hashtable for keywords
+							temp[p++] = *forward;
+							temp[p++] = '\0'; 
+							int key = getKeyword(temp);
+							if(key > 0){
+								token.type = key;
+								token.val_type = 4;
+								lexBegin = ++forward;
+								return token;
+							}	
+							else{
+								token.type = ID;
+								token.val_type = 3;
+								strcpy(token.lex.name,temp);
+								lexBegin = ++forward;
+								return token;
+							}
+						}else{
+							temp[p++] = *forward;
+						}
 					}
 				}
+				if(p>19){
+					printf("ID size exceeded");
+					return;
+				}
+				temp[p++] = '\0';
+				token.type = ID;
+				token.val_type = 3;
+				strcpy(token.lex.name,temp);
+				lexBegin = forward;
+				return token;
 			}
+			
 		}
-		
+//		printf("LexBegin value = %d\n",*lexBegin);
 	}	
 }
-
+void removeComments(char *testcaseFile,char* cleanFile){
+	printf("Remove Comments\n");
+	FILE* fpr = fopen(testcaseFile,"r");
+	printf("Readfile opened\n");
+	FILE* fpw = fopen(cleanFile,"w");
+	printf("Write file opened\n");
+	char c = fgetc(fpr);
+	while(c != EOF){
+		if(c != '#')
+			fputc(c,fpw);
+		else{
+			while(c != '\n')
+				c = fgetc(fpr);
+		}
+		c = fgetc(fpr);
+	}
+}
 
 main(int argc,char* argv[]){
 	char* f = argv[1];
@@ -193,7 +470,7 @@ main(int argc,char* argv[]){
 		exit(0);
 	}
 	fp = getStream(fp,0);
-	int n = 4;
+	int n = 125;
 	/*
 	while((lexBegin) != lex_buffer1+5){
 	printf("%c line_no = %d\n",line_no,*(lexBegin++));
@@ -201,22 +478,22 @@ main(int argc,char* argv[]){
 	*/
 	tokenInfo test;
 //	printf("%c line_no = %d\n",line_no,*(lexBegin++));
-	while(n--){
+	while(*lexBegin != '\0'){
 		test = getNextToken(fp);
 		switch(test.type){
 			case COMMENT : printf("COMMENT line_no = %d\n",line_no-1);
 				       break;
 			case ASSIGNOP : printf("ASSIGNOP line_no = %d\n",line_no);
 				       break;
-			case FUNID : printf("FUNID line_no = %d\n",line_no);
+			case FUNID : printf("FUNID line_no = %d,value = %s\n",line_no,test.lex.name);
 				       break;
 			case ID : printf("ID line_no = %d , value = %s\n",line_no,test.lex.name);
 				       break;
-			case NUM : printf("NUM line_no = %d\n",line_no);
+			case NUM : printf("NUM line_no = %d,value = %d\n",line_no,test.lex.num);
 				       break;
-			case RNUM : printf("RNUM line_no = %d\n",line_no);
+			case RNUM : printf("RNUM line_no = %d,value = %f\n",line_no,test.lex.rnum);
 				       break;
-			case STR : printf("STR line_no = %d\n",line_no);
+			case STR : printf("STR line_no = %d,value = %s\n",line_no,test.lex.name);
 				       break;
 			case END : printf("END line_no = %d\n",line_no);
 				       break;
@@ -282,10 +559,13 @@ main(int argc,char* argv[]){
 				       break;
 			case NE : printf("NE line_no = %d\n",line_no);
 				       break;
+			case ENDOFFILE :  //printf("End of file");
+					  break;
 			default : printf("Error");
 				       break;
 		}
 	}
+//	removeComments("testcase5.txt","test1");
 }
 
 

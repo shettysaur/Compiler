@@ -1,6 +1,4 @@
-a1
-#[]();,
-+-*/[]()_main[     ]
+_main[     ]
 	string str1, str2;
 	matrix m1;
 	str1 = "eradicate";
